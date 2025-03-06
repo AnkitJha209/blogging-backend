@@ -40,6 +40,8 @@ model  Blog{
   userId  Int
   user    User  @relation("BlogsToUser", fields: [userId], references: [id])
   like    Like[]
+  blogTitle String
+  blogDesc  String
 }
 
 model Like{

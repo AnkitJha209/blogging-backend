@@ -115,92 +115,162 @@ export const getAllPersonalBlogs = async (req: AuthRequest, res: Response) => {
 
 export const getSpecificBlog = async (req: AuthRequest, res: Response) => {
     try {
-        const {id} = req.params
-        console.log(id)
-        const decode = req.user
-        if(!id){
+        const { id } = req.params;
+        console.log(id);
+        const decode = req.user;
+        if (!id) {
             res.status(404).json({
                 success: false,
-                message: "No Blog found"
-            })
+                message: "No Blog found",
+            });
             return;
         }
-        if(!decode){
+        if (!decode) {
             res.status(401).json({
                 success: false,
-                message: "Not Authorized. Please Signup first"
-            })
+                message: "Not Authorized. Please Signup first",
+            });
             return;
         }
         const blog = await client.blog.findFirst({
             where: {
-                id: Number(id)
-            }
-        })
-        if(!blog){
+                id: Number(id),
+            },
+        });
+        if (!blog) {
             res.status(402).json({
                 success: false,
-                message: "No blog found with this id"
-            })
+                message: "No blog found with this id",
+            });
             return;
         }
         res.status(200).json({
             success: true,
             message: "Blog Found",
-            blog
-        })
-        
+            blog,
+        });
     } catch (error) {
-        console.log(error)
+        console.log(error);
         res.status(401).json({
             success: false,
-            message: "Cannot Get the blog"
-        })
+            message: "Cannot Get the blog",
+        });
     }
-}
+};
 
 export const deleteABlog = async (req: AuthRequest, res: Response) => {
     try {
-        const {id} = req.params
-        const decode = req.user
-        if(!id){
+        const { id } = req.params;
+        const decode = req.user;
+        if (!id) {
             res.status(404).json({
                 success: false,
-                message: "No Blog found"
-            })
+                message: "No Blog found",
+            });
             return;
         }
-        if(!decode){
+        if (!decode) {
             res.status(401).json({
                 success: false,
-                message: "Not Authorized. Please Signup first"
-            })
+                message: "Not Authorized. Please Signup first",
+            });
             return;
         }
         const blog = await client.blog.delete({
             where: {
                 id: Number(id),
-                userId: decode.id
-            }
-        })
-        if(!blog){
+                userId: decode.id,
+            },
+        });
+        if (!blog) {
             res.status(402).json({
                 success: false,
-                message: "No blog found with this id"
-            })
+                message: "No blog found with this id",
+            });
             return;
         }
         res.status(200).json({
             success: false,
             message: "Blog Found",
-            blog
-        })
-        
+            blog,
+        });
     } catch (error) {
-        console.log(error)
+        console.log(error);
         res.status(401).json({
             success: false,
-            message: "Cannot Get the blog"
-        })
+            message: "Cannot Get the blog",
+        });
     }
-}
+};
+
+export const likeBlog = async (req: AuthRequest, res: Response) => {
+    try {
+        const { id } = req.params;
+        const decode = req.user;
+
+        if (!id) {
+            return res.status(404).json({
+                success: false,
+                message: "No Blog found",
+            });
+        }
+
+        if (!decode) {
+            return res.status(401).json({
+                success: false,
+                message: "Not Authorized. Please Signup first",
+            });
+        }
+
+        // Check if the blog exists
+        const blog = await client.blog.findUnique({
+            where: { id: Number(id) },
+        });
+
+        if (!blog) {
+            return res.status(404).json({
+                success: false,
+                message: "Blog not found",
+            });
+        }
+
+        // Check if the user has already liked the blog
+        const existingLike = await client.like.findFirst({
+            where: {
+                blogId: Number(id),
+                userId: decode.id,
+            },
+        });
+
+        if (existingLike) {
+            // If already liked, remove the like (toggle functionality)
+            await client.like.delete({
+                where: { id: existingLike.id },
+            });
+
+            return res.status(200).json({
+                success: true,
+                message: "Like removed successfully",
+            });
+        }
+
+        // If not liked, add a new like
+        await client.like.create({
+            data: {
+                blogId: Number(id),
+                userId: decode.id,
+            },
+        });
+
+        return res.status(200).json({
+            success: true,
+            message: "Blog liked successfully",
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({
+            success: false,
+            message: "Cannot Like blog",
+        });
+    }
+};
